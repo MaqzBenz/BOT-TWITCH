@@ -150,16 +150,29 @@ class ProtectModule(BaseModule):
 
         step = c.steps[min(count - 1, len(c.steps) - 1)]
         svc, label = self.service, f"CocoProtect : {reason}"
-        if step.action == "warn":
-            await svc.say(c.warn_message.replace("{user}", msg.user).replace("{reason}", reason))
-        elif step.action == "delete":
+        action_performed = step.action
+
+        if msg.is_mod:
+            # Sur Twitch, l'API ne permet pas de timeout/ban un modo sans lui retirer son rôle
+            # Donc on supprime son message et on l'avertit
             await svc.delete_message(msg.msg_id)
-        elif step.action == "timeout":
-            await svc.delete_message(msg.msg_id)
-            await svc.timeout(msg.user_id, step.duration, label)
-        elif step.action == "ban":
-            await svc.ban(msg.user_id, label)
-        detail = f" ({step.duration}s)" if step.action == "timeout" else ""
-        await audit("mod", f"{msg.user} — {reason} → {step.action}{detail} (infraction n°{count})",
-                    {"user": msg.user, "reason": reason, "action": step.action, "message": msg.content[:200]},
+            if step.action in ("timeout", "ban"):
+                action_performed = "delete+warn (modo)"
+                await svc.say(f"@{msg.user} (modérateur) : votre message a été supprimé ({reason}).")
+            elif step.action == "warn":
+                await svc.say(c.warn_message.replace("{user}", msg.user).replace("{reason}", reason))
+        else:
+            if step.action == "warn":
+                await svc.say(c.warn_message.replace("{user}", msg.user).replace("{reason}", reason))
+            elif step.action == "delete":
+                await svc.delete_message(msg.msg_id)
+            elif step.action == "timeout":
+                await svc.delete_message(msg.msg_id)
+                await svc.timeout(msg.user_id, step.duration, label)
+            elif step.action == "ban":
+                await svc.ban(msg.user_id, label)
+
+        detail = f" ({step.duration}s)" if step.action == "timeout" and not msg.is_mod else ""
+        await audit("mod", f"{msg.user} — {reason} → {action_performed}{detail} (infraction n°{count})",
+                    {"user": msg.user, "reason": reason, "action": action_performed, "message": msg.content[:200]},
                     channel=svc.id)
