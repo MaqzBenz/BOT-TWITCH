@@ -28,7 +28,7 @@ class ModuleManager:
             for name, mod in self.modules.items():
                 row = rows.get(name)
                 if row is None:
-                    row = ModuleState(channel_id=self.ctx.id, name=name, enabled=name == "logs",
+                    row = ModuleState(channel_id=self.ctx.id, name=name, enabled=name in ("logs", "commands"),
                                       config=mod.config.model_dump())
                     s.add(row)
                 mod.config = mod.ConfigModel.model_validate(row.config or {})

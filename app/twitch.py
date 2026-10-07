@@ -43,11 +43,21 @@ class ChatBot(commands.Bot):
     async def event_ready(self) -> None:
         self.svc.set_state("connected")
         await audit("system", f"Bot connecté en tant que {self.nick}")
+        # Sécurité : forcer le join sur toutes les chaînes actives enregistrées
+        chans = list(self.svc.registry.by_login)
+        if chans:
+            log.info("Connexion aux canaux Twitch : %s", chans)
+            await self.join_channels(chans)
+
+    async def event_channel_joined(self, channel) -> None:
+        log.info("Canal Twitch rejoint : #%s", channel.name)
+        await audit("system", f"Canal #{channel.name} rejoint")
 
     async def event_message(self, message) -> None:
         if message.echo or message.author is None or message.channel is None:
             return
-        ctx = self.svc.registry.by_login.get(message.channel.name.lower())
+        chan_name = message.channel.name.lower()
+        ctx = self.svc.registry.by_login.get(chan_name)
         if ctx is None:  # chaîne désactivée ou retirée
             return
         a, tags = message.author, message.tags or {}
@@ -56,6 +66,7 @@ class ChatBot(commands.Bot):
             is_mod=bool(a.is_mod), is_broadcaster=bool(a.is_broadcaster), is_vip=bool(a.is_vip),
             is_sub=bool(a.is_subscriber), emote_count=count_emotes(tags.get("emotes")),
         )
+        log.info("[#%s] %s: %s", chan_name, msg.user, msg.content)
         await audit("chat", f"{msg.user}: {msg.content}", channel=ctx.id)
         await ctx.manager.dispatch(msg)
 
@@ -203,10 +214,20 @@ class TwitchService:
 
     # ---------- actions ----------
     async def say(self, login: str, text: str) -> None:
-        if self.bot and self.state == "connected":
-            chan = self.bot.get_channel(login)
-            if chan:
-                await chan.send(text[:450])
+        if not (self.bot and self.state == "connected"):
+            log.warning("Impossible d'envoyer le message sur #%s : bot non connecté", login)
+            return
+        chan = self.bot.get_channel(login)
+        if chan:
+            await chan.send(text[:450])
+            log.info("Message envoyé sur #%s : %s", login, text[:60])
+        else:
+            log.warning("Canal #%s non trouvé dans le cache local TwitchIO, tentative via _ws direct", login)
+            try:
+                await self.bot._ws.send_privmsg(login, text[:450])
+                log.info("Message envoyé via _ws direct sur #%s : %s", login, text[:60])
+            except Exception as exc:
+                log.error("Échec de l'envoi sur #%s : %s", login, exc)
 
     async def ban(self, broadcaster_id: str, user_id: str, reason: str, duration: int | None, audit_channel: int) -> bool:
         body = {"user_id": user_id, "reason": reason[:500]}
