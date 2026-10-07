@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Connexion sécurisée au tableau de bord CocoBot.">
+  <title>CocoBot – Connexion</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <main class="login-wrap">
+    <div class="card login-card">
+      <div class="brand"><span class="logo">🥥</span> CocoBot</div>
+      <h1>Connexion</h1>
+      <p class="sub">Espace d'administration réservé.</p>
+      <form id="login-form" autocomplete="on">
+        <div class="field"><label for="username">Identifiant</label>
+          <input id="username" name="username" type="text" autocomplete="username" required maxlength="64"></div>
+        <div class="field"><label for="password">Mot de passe</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="256"></div>
+        <p class="error" id="login-error" role="alert"></p>
+        <button class="btn" id="login-submit" type="submit">Se connecter</button>
+      </form>
+    </div>
+  </main>
+  <script src="/static/login.js"></script>
+</body>
+</html>

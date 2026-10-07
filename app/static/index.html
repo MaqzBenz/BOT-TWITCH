@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Tableau de bord d'administration CocoBot : modules de modération, commandes, timers et logs Twitch en direct.">
+  <title>CocoBot – Dashboard</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">🥥</span> CocoBot <span class="pill" id="status-pill">…</span></div>
+    <div class="top-right">
+      <label class="hidden-label" for="channel-select">Chaîne</label>
+      <select id="channel-select" aria-label="Chaîne active"></select>
+      <span class="pill" id="live-pill">temps réel</span>
+      <button class="btn ghost sm" id="logout-btn">Déconnexion</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Sections">
+    <button class="tab active" data-tab="channels">Chaînes</button>
+    <button class="tab ch-tab" data-tab="modules">Modules</button>
+    <button class="tab ch-tab" data-tab="commands">Commandes</button>
+    <button class="tab ch-tab" data-tab="timers">Timers</button>
+    <button class="tab ch-tab" data-tab="logs">Logs</button>
+  </nav>
+
+  <main>
+    <h1 class="hidden">Tableau de bord CocoBot</h1>
+
+    <section id="tab-channels">
+      <h2>Chaînes connectées</h2>
+      <div class="split">
+        <div class="card table-wrap">
+          <table>
+            <thead><tr><th>Chaîne</th><th>État</th><th>Active</th><th></th></tr></thead>
+            <tbody id="channels-body"></tbody>
+          </table>
+          <p class="desc" id="channels-empty">Aucune chaîne. Ajoutez-en une →</p>
+        </div>
+        <form class="card config" id="channel-form">
+          <h3>Ajouter une chaîne</h3>
+          <div class="field"><label for="ch-login">Pseudo Twitch</label>
+            <input id="ch-login" type="text" maxlength="26" placeholder="ex : mastreamer" required></div>
+          <p class="desc">Chaque chaîne a sa propre configuration. Le compte du bot doit être <b>modérateur</b> sur la chaîne pour pouvoir sanctionner (<code class="cmd">/mod nomdubot</code>).</p>
+          <button class="btn" type="submit">Ajouter</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="tab-modules" class="hidden">
+      <h2>Modules</h2>
+      <div class="grid" id="modules-grid"></div>
+    </section>
+
+    <section id="tab-commands" class="hidden">
+      <h2>Commandes personnalisées</h2>
+      <div class="split">
+        <div class="card table-wrap">
+          <table>
+            <thead><tr><th>Commande</th><th>Réponse</th><th>Perm.</th><th>CD</th><th>Util.</th><th></th></tr></thead>
+            <tbody id="commands-body"></tbody>
+          </table>
+        </div>
+        <form class="card config" id="command-form">
+          <h3 id="command-form-title">Nouvelle commande</h3>
+          <input type="hidden" id="cmd-id">
+          <div class="field"><label for="cmd-name">Nom (sans le préfixe)</label>
+            <input id="cmd-name" type="text" maxlength="25" pattern="[A-Za-z0-9_]{1,25}" required></div>
+          <div class="field"><label for="cmd-response">Réponse</label>
+            <textarea id="cmd-response" maxlength="500" required></textarea>
+            <span class="hint">Variables : {user} {touser} {args} {channel} {uptime} {game} {title} {viewers} {count}</span></div>
+          <div class="field"><label for="cmd-permission">Permission</label>
+            <select id="cmd-permission">
+              <option value="everyone">Tout le monde</option><option value="vip">VIP+</option>
+              <option value="mod">Modérateurs</option><option value="broadcaster">Diffuseur</option>
+            </select></div>
+          <div class="row">
+            <div class="field"><label for="cmd-cd-global">Cooldown global (s)</label>
+              <input id="cmd-cd-global" type="number" min="0" max="86400" value="5"></div>
+            <div class="field"><label for="cmd-cd-user">Cooldown / user (s)</label>
+              <input id="cmd-cd-user" type="number" min="0" max="86400" value="15"></div>
+          </div>
+          <div class="row"><label for="cmd-enabled">Activée</label>
+            <label class="switch"><input type="checkbox" id="cmd-enabled" checked><span class="slider"></span></label></div>
+          <div class="row"><button class="btn" type="submit">Enregistrer</button>
+            <button class="btn ghost" type="button" id="cmd-reset">Nouveau</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="tab-timers" class="hidden">
+      <h2>Timers & annonces</h2>
+      <div class="split">
+        <div class="card table-wrap">
+          <table>
+            <thead><tr><th>Nom</th><th>Message</th><th>Toutes les</th><th>Min. msg</th><th></th></tr></thead>
+            <tbody id="timers-body"></tbody>
+          </table>
+        </div>
+        <form class="card config" id="timer-form">
+          <h3 id="timer-form-title">Nouveau timer</h3>
+          <input type="hidden" id="tm-id">
+          <div class="field"><label for="tm-name">Nom</label><input id="tm-name" type="text" maxlength="50" required></div>
+          <div class="field"><label for="tm-message">Message</label><textarea id="tm-message" maxlength="500" required></textarea></div>
+          <div class="row">
+            <div class="field"><label for="tm-interval">Intervalle (min)</label>
+              <input id="tm-interval" type="number" min="1" max="1440" value="15"></div>
+            <div class="field"><label for="tm-min">Messages min.</label>
+              <input id="tm-min" type="number" min="0" max="10000" value="5"></div>
+          </div>
+          <div class="row"><label for="tm-enabled">Activé</label>
+            <label class="switch"><input type="checkbox" id="tm-enabled" checked><span class="slider"></span></label></div>
+          <div class="row"><button class="btn" type="submit">Enregistrer</button>
+            <button class="btn ghost" type="button" id="tm-reset">Nouveau</button></div>
+        </form>
+      </div>
+    </section>
+
+    <section id="tab-logs" class="hidden">
+      <h2>Logs & audit en direct</h2>
+      <div class="card">
+        <div class="log-toolbar">
+          <label for="log-filter">Catégorie</label>
+          <select id="log-filter">
+            <option value="">Toutes</option><option>mod</option><option>command</option><option>timer</option>
+            <option>config</option><option>auth</option><option>chat</option><option>system</option>
+          </select>
+          <button class="btn ghost sm" id="log-clear">Vider l'affichage</button>
+        </div>
+        <div id="log-list" aria-live="polite"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" role="status"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

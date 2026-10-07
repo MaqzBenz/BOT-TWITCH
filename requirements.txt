@@ -1,0 +1,9 @@
+fastapi==0.115.6
+uvicorn==0.34.0
+sqlalchemy[asyncio]==2.0.36
+aiosqlite==0.20.0
+pydantic-settings==2.7.0
+argon2-cffi==23.1.0
+PyJWT==2.10.1
+httpx==0.28.1
+twitchio==2.10.0
